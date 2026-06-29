@@ -251,7 +251,7 @@ export function defaultConfig(type: string): Record<string, unknown> {
     case "skill_workflow":
       return withBaseConfig(type, {
         provider_id: null,
-        system_prompt: "你正在执行一个 AI Workflow Builder 的技能节点。请严格按照该节点的 Markdown 指令处理上游完整输出，并返回完整结果。",
+        system_prompt: "你正在执行灵改流的技能节点。请严格按照该节点的 Markdown 指令处理上游完整输出，并返回完整结果。",
         prompt_summary: "",
         temperature: 0.7,
         max_tokens: 2000,

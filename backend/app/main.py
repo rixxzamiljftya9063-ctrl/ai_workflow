@@ -8,7 +8,7 @@ from app.routers import auth, files, projects, providers, runs, workflows
 
 settings = get_settings()
 
-app = FastAPI(title="AI Workflow Builder API", version="0.1.0")
+app = FastAPI(title="灵改流 API", version="0.1.0")
 settings.storage_path.mkdir(parents=True, exist_ok=True)
 projects_storage_path = settings.storage_path / "projects"
 projects_storage_path.mkdir(parents=True, exist_ok=True)

@@ -97,9 +97,9 @@ export default function HomePage() {
           <div className="flex flex-col justify-center">
             <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-xs text-slate-600">
               <Boxes size={14} />
-              通用 AI 工作流平台
+              灵改流
             </div>
-            <h1 className="text-3xl font-semibold tracking-normal text-ink">AI Workflow Builder</h1>
+            <h1 className="text-3xl font-semibold tracking-normal text-ink">灵改流</h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
               注册后你的项目、API 配置、上传文件、工作流和运行记录都会保存到后端数据库，并且只在你的账号下显示。
             </p>
@@ -155,7 +155,7 @@ export default function HomePage() {
               <Boxes size={14} />
               {user.display_name || user.username}
             </div>
-            <h1 className="text-2xl font-semibold tracking-normal text-ink">AI Workflow Builder</h1>
+            <h1 className="text-2xl font-semibold tracking-normal text-ink">灵改流</h1>
             <p className="mt-1 text-sm text-slate-600">你的项目数据会保存到后端，并按账号隔离。</p>
           </div>
           <div className="flex items-center gap-2">

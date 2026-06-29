@@ -270,7 +270,7 @@ class ProviderClient:
             return (
                 "```python\n"
                 "from pathlib import Path\n"
-                "print('AI Workflow Builder mock execution ok')\n"
+                "print('灵改流 mock execution ok')\n"
                 "Path('result.txt').write_text('mock result generated', encoding='utf-8')\n"
                 "```\n"
             )

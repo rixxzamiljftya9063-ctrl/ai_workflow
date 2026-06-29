@@ -1,4 +1,4 @@
-# AI Workflow Builder
+# 灵改流
 
 一个本地可运行的全栈 MVP：ProcessOn 风格画布、AI 工作流节点、多 API / Agent 协同执行、运行日志、结构化交叉验证、代码执行、Markdown 输出、合规检查，以及不含 API Key 的 `workflow.json` 导入导出。
 
