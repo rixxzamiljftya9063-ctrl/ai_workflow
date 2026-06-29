@@ -4,16 +4,18 @@ services:
     runtime: python
     plan: free
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
       - key: DATABASE_URL
         value: sqlite:///./storage/ai_workflow.db
       - key: STORAGE_ROOT
         value: ./storage
       - key: FRONTEND_ORIGIN
-        value: https://ai-workflow.vercel.app
+        value: https://rixxzamiljftya9063-ctrl.github.io
       - key: DEFAULT_MOCK_PROVIDER
         value: Mock Provider
       - key: REQUEST_TIMEOUT_SECONDS
