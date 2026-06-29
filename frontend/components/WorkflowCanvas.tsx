@@ -182,6 +182,7 @@ function WorkflowCanvasInner({ workflow, providers, files }: Props) {
   const [activeRunId, setActiveRunId] = useState<number | null>(null);
   const [base, setBase] = useState<WorkflowJson>(workflow.workflow_json);
   const runAbortRef = useRef<AbortController | null>(null);
+  const saveInFlightRef = useRef(false);
   const selectedNodeIdRef = useRef<string | null>(null);
   const reactFlow = useRef<Pick<ReactFlowInstance, "fitView" | "zoomIn" | "zoomOut" | "screenToFlowPosition"> | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -375,6 +376,8 @@ function WorkflowCanvasInner({ workflow, providers, files }: Props) {
   }
 
   async function save() {
+    if (saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
     setStatus("正在保存...");
     try {
       const workflowJson = buildWorkflowJson();
@@ -389,8 +392,18 @@ function WorkflowCanvasInner({ workflow, providers, files }: Props) {
     } catch (error) {
       setStatus(`保存失败：${error instanceof Error ? error.message : String(error)}`);
       throw error;
+    } finally {
+      saveInFlightRef.current = false;
     }
   }
+
+  useEffect(() => {
+    if (!dirty || isRunning) return;
+    const timer = window.setTimeout(() => {
+      save().catch(() => {});
+    }, 2500);
+    return () => window.clearTimeout(timer);
+  }, [dirty, nodes, edges, isRunning]);
 
   function applyRunResult(runResult: WorkflowRun, steps: WorkflowRunStep[], mode: "workflow" | "node", targetNodeId?: string, complete = true) {
     setLastRun(runResult);

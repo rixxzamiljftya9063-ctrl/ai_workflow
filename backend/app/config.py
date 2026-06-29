@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     backend_port: int = 8000
     frontend_origin: str = "http://127.0.0.1:3000"
     database_url: str = "sqlite:///./storage/ai_workflow.db"
+    sqlite_fallback_database_url: str = "sqlite:///./storage/ai_workflow.db"
     storage_root: str = "./storage"
     default_mock_provider: str = "Mock Provider"
     request_timeout_seconds: int = 180

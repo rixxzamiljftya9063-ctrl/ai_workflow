@@ -11,6 +11,8 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: DATABASE_URL
+        sync: false
+      - key: SQLITE_FALLBACK_DATABASE_URL
         value: sqlite:///./storage/ai_workflow.db
       - key: STORAGE_ROOT
         value: ./storage

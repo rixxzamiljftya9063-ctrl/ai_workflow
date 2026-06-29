@@ -12,12 +12,24 @@ class Base(DeclarativeBase):
 
 
 settings = get_settings()
-if settings.database_url.startswith("sqlite:///"):
-    db_file = settings.database_url.replace("sqlite:///", "", 1)
+
+
+def normalize_database_url(url: str) -> str:
+    url = (url or "").strip() or settings.sqlite_fallback_database_url
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg://" + url.removeprefix("postgres://")
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url.removeprefix("postgresql://")
+    return url
+
+
+database_url = normalize_database_url(settings.database_url)
+if database_url.startswith("sqlite:///"):
+    db_file = database_url.replace("sqlite:///", "", 1)
     Path(db_file).parent.mkdir(parents=True, exist_ok=True)
 
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-engine = create_engine(settings.database_url, connect_args=connect_args)
+connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
+engine = create_engine(database_url, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
@@ -46,7 +58,7 @@ def init_db() -> None:
 
 
 def migrate_sqlite_schema() -> None:
-    if not settings.database_url.startswith("sqlite"):
+    if not database_url.startswith("sqlite"):
         return
     inspector = inspect(engine)
     table_names = inspector.get_table_names()
