@@ -325,68 +325,90 @@ git push -u origin main
 - `.env`
 - 任何真实 API Key
 
-## 公网部署建议
+## 免费公网部署：Render 后端 + Vercel 前端
 
 本项目是前后端分离架构：
 
-- Backend: FastAPI + SQLite，适合部署到 Render、Railway、Fly.io、VPS 等支持 Python Web 服务和持久磁盘的平台。
-- Frontend: Next.js，适合部署到 Vercel、Netlify 或同一台 VPS。
+- 后端：FastAPI，部署到 Render 免费 Web Service。
+- 前端：Next.js，部署到 Vercel 免费 Hobby。
+- 代码：托管在 GitHub。
 
-部署时需要配置：
+### 1. 部署后端到 Render
 
-Backend 环境变量：
-
-```text
-DATABASE_URL=sqlite:///./storage/ai_workflow.db
-STORAGE_ROOT=./storage
-FRONTEND_ORIGIN=https://你的前端域名
-```
-
-Frontend 环境变量：
-
-```text
-NEXT_PUBLIC_API_BASE_URL=https://你的后端域名
-```
-
-注意：SQLite 需要持久磁盘；如果部署平台没有持久磁盘，重启后项目、Provider、上传文件和运行记录可能丢失。多人长期使用建议后续迁移到 PostgreSQL，并增加登录和权限系统。
-
-## Render 一键部署
-
-仓库已包含 `render.yaml`，可以用 Render Blueprint 创建两个服务：
+仓库已包含 `render.yaml`，Render 会创建一个后端服务：
 
 - `ai-workflow-backend`：FastAPI 后端
-- `ai-workflow-frontend`：Next.js 前端
 
-部署步骤：
-
-1. 打开 Render Blueprint 页面：
+打开 Render Blueprint 页面：
 
 ```text
 https://dashboard.render.com/blueprint/new?repo=https://github.com/rixxzamiljftya9063-ctrl/ai_workflow
 ```
 
-2. 登录 Render，并授权连接 GitHub。
-3. 选择本仓库，确认 Blueprint。
-4. 点击 `Apply` 开始部署。
-5. 部署完成后，打开：
+然后按页面提示授权 GitHub，选择仓库，点击 `Apply`。
+
+Render 后端部署完成后，记录你的后端地址，例如：
 
 ```text
-https://ai-workflow-frontend.onrender.com
+https://ai-workflow-backend.onrender.com
 ```
 
-后端健康检查地址：
+健康检查地址：
 
 ```text
 https://ai-workflow-backend.onrender.com/health
 ```
 
-Render 免费实例冷启动会比较慢，首次访问可能需要等待几十秒。
+### 2. 部署前端到 Vercel
 
-重要限制：
+在 Vercel 中导入 GitHub 仓库：
 
-- 当前 Render 配置使用 SQLite 本地文件，适合演示，不适合多人长期生产使用。
-- 免费实例重新部署或休眠恢复时，上传文件和数据库可能不稳定。
-- 正式多人使用建议迁移到 PostgreSQL，并给后端配置持久磁盘或对象存储。
-- 如果你在 Render Dashboard 修改了服务名称，需要同步修改：
-  - 后端 `FRONTEND_ORIGIN`
-  - 前端 `NEXT_PUBLIC_API_BASE_URL`
+```text
+https://github.com/rixxzamiljftya9063-ctrl/ai_workflow
+```
+
+Vercel 项目配置：
+
+```text
+Framework Preset: Next.js
+Root Directory: frontend
+Build Command: npm run build
+Install Command: npm ci
+```
+
+环境变量：
+
+```text
+NEXT_PUBLIC_API_BASE_URL=https://你的-render-后端地址
+```
+
+例如：
+
+```text
+NEXT_PUBLIC_API_BASE_URL=https://ai-workflow-backend.onrender.com
+```
+
+部署完成后，Vercel 会给出一个前端访问地址，例如：
+
+```text
+https://ai-workflow.vercel.app
+```
+
+### 3. 回填后端 CORS 地址
+
+如果你的 Vercel 域名不是 `https://ai-workflow.vercel.app`，建议到 Render 后端服务的 Environment 页面，把：
+
+```text
+FRONTEND_ORIGIN=https://你的-vercel-前端地址
+```
+
+改成真实前端地址，然后重启 Render 后端。
+
+后端也已允许 `*.vercel.app` 预览域名，通常 Vercel 默认域名可以直接访问。
+
+### 免费部署限制
+
+- Render 免费实例会休眠，首次访问或长时间未访问后会比较慢。
+- 当前免费部署默认使用 SQLite 本地文件，适合演示，不适合多人长期生产使用。
+- Render 免费环境下，数据库和上传文件的持久性不如正式云服务器或托管数据库稳定。
+- 如果之后真的给很多人长期使用，建议迁移到 PostgreSQL/Supabase/阿里云 RDS，并把上传文件迁移到对象存储。

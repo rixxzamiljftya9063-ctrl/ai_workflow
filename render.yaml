@@ -13,7 +13,7 @@ services:
       - key: STORAGE_ROOT
         value: ./storage
       - key: FRONTEND_ORIGIN
-        value: https://ai-workflow-frontend.onrender.com
+        value: https://ai-workflow.vercel.app
       - key: DEFAULT_MOCK_PROVIDER
         value: Mock Provider
       - key: REQUEST_TIMEOUT_SECONDS
@@ -24,14 +24,3 @@ services:
         value: 1
       - key: PROVIDER_RETRY_MAX_DELAY_SECONDS
         value: 8
-
-  - type: web
-    name: ai-workflow-frontend
-    runtime: node
-    plan: free
-    rootDir: frontend
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start -- -H 0.0.0.0 -p $PORT
-    envVars:
-      - key: NEXT_PUBLIC_API_BASE_URL
-        value: https://ai-workflow-backend.onrender.com
