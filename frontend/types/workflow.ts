@@ -4,10 +4,23 @@ export type NodeRunStatus = "pending" | "running" | "success" | "error" | "skipp
 
 export type Project = {
   id: number;
+  owner_user_id?: number | null;
   name: string;
   description: string;
   created_at: string;
   updated_at: string;
+};
+
+export type User = {
+  id: number;
+  username: string;
+  display_name: string;
+  created_at: string;
+};
+
+export type AuthResponse = {
+  token: string;
+  user: User;
 };
 
 export type ApiProvider = {

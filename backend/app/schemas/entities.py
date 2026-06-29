@@ -7,6 +7,26 @@ from pydantic import BaseModel, ConfigDict, Field
 ProviderType = Literal["openai_compatible", "deepseek", "anthropic", "custom", "mock"]
 
 
+class UserRead(BaseModel):
+    id: int
+    username: str
+    display_name: str = ""
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AuthRequest(BaseModel):
+    username: str = Field(min_length=2, max_length=120)
+    password: str = Field(min_length=4, max_length=200)
+    display_name: str = ""
+
+
+class AuthResponse(BaseModel):
+    token: str
+    user: UserRead
+
+
 class ProjectBase(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     description: str = ""
@@ -23,6 +43,7 @@ class ProjectUpdate(BaseModel):
 
 class ProjectRead(ProjectBase):
     id: int
+    owner_user_id: int | None = None
     created_at: datetime
     updated_at: datetime
 

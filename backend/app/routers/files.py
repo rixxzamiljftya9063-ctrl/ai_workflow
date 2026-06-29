@@ -2,17 +2,18 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.entities import FileAsset, Project
+from app.models.entities import FileAsset, User
 from app.schemas.entities import FileRead
+from app.services.auth import current_user
+from app.services.ownership import require_file, require_project
 from app.services.storage import extract_text, save_upload
 
 router = APIRouter(tags=["files"])
 
 
 @router.post("/api/projects/{project_id}/files", response_model=FileRead)
-async def upload_file(project_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not db.get(Project, project_id):
-        raise HTTPException(status_code=404, detail="Project not found")
+async def upload_file(project_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(current_user)):
+    require_project(db, project_id, user)
     try:
         filename, path, content = await save_upload(project_id, file)
         extracted = extract_text(path, content, file.content_type or "")
@@ -33,13 +34,11 @@ async def upload_file(project_id: int, file: UploadFile = File(...), db: Session
 
 
 @router.get("/api/projects/{project_id}/files", response_model=list[FileRead])
-def list_files(project_id: int, db: Session = Depends(get_db)):
+def list_files(project_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    require_project(db, project_id, user)
     return db.query(FileAsset).filter(FileAsset.project_id == project_id).order_by(FileAsset.created_at.desc()).all()
 
 
 @router.get("/api/files/{file_id}", response_model=FileRead)
-def get_file(file_id: int, db: Session = Depends(get_db)):
-    asset = db.get(FileAsset, file_id)
-    if not asset:
-        raise HTTPException(status_code=404, detail="File not found")
-    return asset
+def get_file(file_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    return require_file(db, file_id, user)

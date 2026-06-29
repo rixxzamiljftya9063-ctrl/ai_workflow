@@ -1,4 +1,4 @@
-import type { ApiProvider, ChatMessage, FileAsset, Project, ProviderChatResult, ProviderTestResult, Workflow, WorkflowRun, WorkflowRunStep } from "@/types/workflow";
+import type { ApiProvider, AuthResponse, ChatMessage, FileAsset, Project, ProviderChatResult, ProviderTestResult, User, Workflow, WorkflowRun, WorkflowRunStep } from "@/types/workflow";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
@@ -16,14 +16,32 @@ export class ApiRequestError extends Error {
   }
 }
 
+const TOKEN_KEY = "ai_workflow_token";
+
+export function getAuthToken() {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(TOKEN_KEY) || "";
+}
+
+export function setAuthToken(token: string) {
+  if (typeof window === "undefined") return;
+  if (token) window.localStorage.setItem(TOKEN_KEY, token);
+  else window.localStorage.removeItem(TOKEN_KEY);
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`;
   let response: Response;
+  const token = getAuthToken();
+  const headers =
+    init?.body instanceof FormData
+      ? { ...(init.headers || {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      : { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init?.headers || {}) };
 
   try {
     response = await fetch(url, {
       ...init,
-      headers: init?.body instanceof FormData ? init.headers : { "Content-Type": "application/json", ...(init?.headers || {}) },
+      headers,
       cache: "no-store"
     });
   } catch (error) {
@@ -63,6 +81,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => request<{ status: string }>("/health"),
+  register: (body: { username: string; password: string; display_name?: string }) => request<AuthResponse>("/api/auth/register", { method: "POST", body: JSON.stringify(body) }),
+  login: (body: { username: string; password: string }) => request<AuthResponse>("/api/auth/login", { method: "POST", body: JSON.stringify(body) }),
+  me: () => request<User>("/api/auth/me"),
+  logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   projects: () => request<Project[]>("/api/projects"),
   createProject: (body: { name: string; description: string }) => request<Project>("/api/projects", { method: "POST", body: JSON.stringify(body) }),
   deleteProject: (id: number) => request<{ ok: boolean }>(`/api/projects/${id}`, { method: "DELETE" }),

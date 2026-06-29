@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.database import init_db
-from app.routers import files, projects, providers, runs, workflows
+from app.routers import auth, files, projects, providers, runs, workflows
 
 settings = get_settings()
 
@@ -41,6 +41,7 @@ def health():
 
 
 app.include_router(projects.router)
+app.include_router(auth.router)
 app.include_router(providers.router)
 app.include_router(workflows.router)
 app.include_router(files.router)

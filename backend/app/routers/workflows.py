@@ -3,8 +3,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.entities import ApiProvider, Project, Workflow
+from app.models.entities import ApiProvider, User, Workflow
 from app.schemas.entities import WorkflowCreate, WorkflowImportRequest, WorkflowRead, WorkflowUpdate
+from app.services.auth import current_user
+from app.services.ownership import require_project, require_workflow
 from app.services.security import sanitize_payload
 from app.workflow.templates import empty_workflow, modeling_template
 
@@ -12,14 +14,14 @@ router = APIRouter(tags=["workflows"])
 
 
 @router.get("/api/projects/{project_id}/workflows", response_model=list[WorkflowRead])
-def list_workflows(project_id: int, db: Session = Depends(get_db)):
+def list_workflows(project_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    require_project(db, project_id, user)
     return db.query(Workflow).filter(Workflow.project_id == project_id).order_by(Workflow.updated_at.desc()).all()
 
 
 @router.post("/api/projects/{project_id}/workflows", response_model=WorkflowRead)
-def create_workflow(project_id: int, payload: WorkflowCreate, db: Session = Depends(get_db)):
-    if not db.get(Project, project_id):
-        raise HTTPException(status_code=404, detail="Project not found")
+def create_workflow(project_id: int, payload: WorkflowCreate, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    require_project(db, project_id, user)
     workflow_json = payload.workflow_json or empty_workflow(payload.name)
     if payload.template == "math_modeling_cross_review":
         providers = db.query(ApiProvider).filter(ApiProvider.project_id == project_id, ApiProvider.enabled == True).all()  # noqa: E712
@@ -37,18 +39,13 @@ def create_workflow(project_id: int, payload: WorkflowCreate, db: Session = Depe
 
 
 @router.get("/api/workflows/{workflow_id}", response_model=WorkflowRead)
-def get_workflow(workflow_id: int, db: Session = Depends(get_db)):
-    workflow = db.get(Workflow, workflow_id)
-    if not workflow:
-        raise HTTPException(status_code=404, detail="Workflow not found")
-    return workflow
+def get_workflow(workflow_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    return require_workflow(db, workflow_id, user)
 
 
 @router.put("/api/workflows/{workflow_id}", response_model=WorkflowRead)
-def update_workflow(workflow_id: int, payload: WorkflowUpdate, db: Session = Depends(get_db)):
-    workflow = db.get(Workflow, workflow_id)
-    if not workflow:
-        raise HTTPException(status_code=404, detail="Workflow not found")
+def update_workflow(workflow_id: int, payload: WorkflowUpdate, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    workflow = require_workflow(db, workflow_id, user)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(workflow, key, value)
     db.add(workflow)
@@ -58,20 +55,16 @@ def update_workflow(workflow_id: int, payload: WorkflowUpdate, db: Session = Dep
 
 
 @router.delete("/api/workflows/{workflow_id}")
-def delete_workflow(workflow_id: int, db: Session = Depends(get_db)):
-    workflow = db.get(Workflow, workflow_id)
-    if not workflow:
-        raise HTTPException(status_code=404, detail="Workflow not found")
+def delete_workflow(workflow_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    workflow = require_workflow(db, workflow_id, user)
     db.delete(workflow)
     db.commit()
     return {"ok": True}
 
 
 @router.get("/api/workflows/{workflow_id}/export")
-def export_workflow(workflow_id: int, db: Session = Depends(get_db)):
-    workflow = db.get(Workflow, workflow_id)
-    if not workflow:
-        raise HTTPException(status_code=404, detail="Workflow not found")
+def export_workflow(workflow_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    workflow = require_workflow(db, workflow_id, user)
     required_providers = []
     for node in workflow.workflow_json.get("nodes", []):
         node_data = node.get("data") or {}
@@ -93,9 +86,8 @@ def export_workflow(workflow_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/api/projects/{project_id}/workflows/import", response_model=WorkflowRead)
-def import_workflow(project_id: int, payload: WorkflowImportRequest, db: Session = Depends(get_db)):
-    if not db.get(Project, project_id):
-        raise HTTPException(status_code=404, detail="Project not found")
+def import_workflow(project_id: int, payload: WorkflowImportRequest, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    require_project(db, project_id, user)
     workflow_json = sanitize_payload(payload.workflow_json)
     workflow_json.pop("api_key", None)
     name = payload.name or workflow_json.get("name") or "Imported workflow"

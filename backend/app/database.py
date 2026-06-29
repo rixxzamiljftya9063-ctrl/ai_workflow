@@ -34,6 +34,8 @@ def init_db() -> None:
         ApiProvider,
         FileAsset,
         Project,
+        User,
+        UserSession,
         Workflow,
         WorkflowRun,
         WorkflowRunStep,
@@ -47,9 +49,14 @@ def migrate_sqlite_schema() -> None:
     if not settings.database_url.startswith("sqlite"):
         return
     inspector = inspect(engine)
-    if "api_providers" not in inspector.get_table_names():
+    table_names = inspector.get_table_names()
+    if "api_providers" not in table_names:
         return
-    columns = {column["name"] for column in inspector.get_columns("api_providers")}
     with engine.begin() as connection:
+        columns = {column["name"] for column in inspector.get_columns("api_providers")}
         if "description" not in columns:
             connection.execute(text("ALTER TABLE api_providers ADD COLUMN description TEXT DEFAULT ''"))
+        if "projects" in table_names:
+            project_columns = {column["name"] for column in inspector.get_columns("projects")}
+            if "owner_user_id" not in project_columns:
+                connection.execute(text("ALTER TABLE projects ADD COLUMN owner_user_id INTEGER"))
