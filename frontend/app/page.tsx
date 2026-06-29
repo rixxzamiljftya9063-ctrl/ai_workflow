@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { Activity, Boxes, LogOut, Plus, Trash2, UserPlus } from "lucide-react";
 import { api, setAuthToken } from "@/lib/api";
+import { projectPath } from "@/lib/routes";
 import type { Project, User } from "@/types/workflow";
 
 export default function HomePage() {
@@ -200,7 +201,7 @@ export default function HomePage() {
               </div>
               <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
                 <span>更新：{new Date(project.updated_at).toLocaleString()}</span>
-                <Link className="btn btn-primary" href={`/projects/${project.id}`}>
+                <Link className="btn btn-primary" href={projectPath(project.id)}>
                   进入项目
                 </Link>
               </div>

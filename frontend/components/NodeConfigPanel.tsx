@@ -3,6 +3,7 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { ApiProvider, FileAsset, WorkflowJson, WorkflowRunStep } from "@/types/workflow";
 import { api } from "@/lib/api";
+import { projectPath } from "@/lib/routes";
 import { apiLikeNodeTypes, apiNodeTypes, nodeLabel } from "@/lib/workflow";
 import { JsonView } from "@/components/JsonView";
 
@@ -163,7 +164,7 @@ export function NodeConfigPanel({ node, edge, projectId, providers, files, workf
           <ProviderSelect providers={providers} value={config.provider_id} onChange={(value) => updateConfig("provider_id", value ? Number(value) : null)} />
           <ProviderDetails provider={findProvider(providers, config.provider_id)} />
           {projectId && (
-            <a className="btn w-full justify-center" href={`/projects/${projectId}`}>
+            <a className="btn w-full justify-center" href={projectPath(projectId)}>
               添加 / 管理 API / 智能体
             </a>
           )}
@@ -200,7 +201,7 @@ export function NodeConfigPanel({ node, edge, projectId, providers, files, workf
           <ProviderSelect providers={providers} value={config.provider_id} onChange={(value) => updateConfig("provider_id", value ? Number(value) : null)} />
           <ProviderDetails provider={findProvider(providers, config.provider_id)} />
           {projectId && (
-            <a className="btn w-full justify-center" href={`/projects/${projectId}`}>
+            <a className="btn w-full justify-center" href={projectPath(projectId)}>
               添加 / 管理 API / 智能体
             </a>
           )}

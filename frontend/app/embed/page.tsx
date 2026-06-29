@@ -1,17 +1,23 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Loader2, Play, Workflow as WorkflowIcon } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Workflow, WorkflowRun, WorkflowRunStep } from "@/types/workflow";
 import { JsonView } from "@/components/JsonView";
 
-type PageProps = {
-  params: Promise<{ workflowId: string }>;
-};
+export default function EmbedWorkflowPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-canvas p-4 text-sm text-slate-600">正在加载嵌入页...</main>}>
+      <EmbedWorkflowPageContent />
+    </Suspense>
+  );
+}
 
-export default function EmbedWorkflowPage({ params }: PageProps) {
-  const { workflowId } = use(params);
+function EmbedWorkflowPageContent() {
+  const searchParams = useSearchParams();
+  const workflowId = searchParams.get("workflowId") || "";
   const id = Number(workflowId);
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [input, setInput] = useState("");

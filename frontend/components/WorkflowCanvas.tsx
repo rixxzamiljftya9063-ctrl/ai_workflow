@@ -70,6 +70,7 @@ import {
   type LucideIcon
 } from "lucide-react";
 import { API_BASE, api } from "@/lib/api";
+import { appPath, embedWorkflowPath, projectPath } from "@/lib/routes";
 import { fromReactFlow, makeReactNode, nodeCatalog, nodeCategories, nodeColor, toReactFlow, type NodeCatalogItem, type NodeCategory } from "@/lib/workflow";
 import { workflowTemplates } from "@/lib/workflowTemplates";
 import type { ApiProvider, FileAsset, NodeRunStatus, Workflow, WorkflowJson, WorkflowRun, WorkflowRunStep } from "@/types/workflow";
@@ -641,7 +642,7 @@ function WorkflowCanvasInner({ workflow, providers, files }: Props) {
     <div className="grid h-screen grid-cols-[300px_1fr_380px] grid-rows-[60px_1fr_220px] bg-canvas" onKeyDown={onKeyDown} tabIndex={0}>
       <header className="col-span-3 flex items-center justify-between border-b border-line bg-white px-4">
         <div className="flex min-w-0 items-center gap-3">
-          <a className="btn" href={`/projects/${workflow.project_id}`}>
+          <a className="btn" href={projectPath(workflow.project_id)}>
             返回项目
           </a>
           <div className="min-w-0">
@@ -1081,7 +1082,7 @@ const result = await runner.run(workflow, {
       title: "网页框架嵌入",
       description: "把轻量运行面板嵌到你的页面中。",
       code: `<iframe
-  src="${frontendBase}/embed/workflows/${workflowId}"
+  src="${frontendBase}${appPath(embedWorkflowPath(workflowId))}"
   width="100%"
   height="720"
   frameborder="0">

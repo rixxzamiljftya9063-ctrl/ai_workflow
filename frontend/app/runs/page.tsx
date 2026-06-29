@@ -1,16 +1,24 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
+import { projectPath } from "@/lib/routes";
 import type { WorkflowRun, WorkflowRunStep } from "@/types/workflow";
 import { JsonView } from "@/components/JsonView";
 
-type Props = { params: Promise<{ runId: string }> };
+export default function RunDetailPage() {
+  return (
+    <Suspense fallback={<main className="p-6 text-sm text-slate-600">正在加载运行详情...</main>}>
+      <RunDetailPageContent />
+    </Suspense>
+  );
+}
 
-export default function RunDetailPage({ params }: Props) {
-  const { runId: runIdParam } = use(params);
-  const runId = Number(runIdParam);
+function RunDetailPageContent() {
+  const searchParams = useSearchParams();
+  const runId = Number(searchParams.get("runId") || 0);
   const [run, setRun] = useState<WorkflowRun | null>(null);
   const [steps, setSteps] = useState<WorkflowRunStep[]>([]);
   const [error, setError] = useState("");
@@ -24,6 +32,7 @@ export default function RunDetailPage({ params }: Props) {
       .catch((exc) => setError(exc instanceof Error ? exc.message : String(exc)));
   }, [runId]);
 
+  if (!runId) return <main className="p-6 text-sm text-red-700">缺少 runId 参数。</main>;
   if (error) return <main className="p-6 text-sm text-red-700">{error}</main>;
   if (!run) return <main className="p-6 text-sm text-slate-600">正在加载运行详情...</main>;
 
@@ -32,7 +41,7 @@ export default function RunDetailPage({ params }: Props) {
       <section className="mx-auto flex max-w-7xl flex-col gap-4">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <Link href={`/projects/${run.project_id}`} className="text-sm text-blue-700">
+            <Link href={projectPath(run.project_id)} className="text-sm text-blue-700">
               返回项目
             </Link>
             <h1 className="mt-2 text-2xl font-semibold">运行 #{run.id}</h1>

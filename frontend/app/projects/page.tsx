@@ -1,13 +1,13 @@
 "use client";
 
-import { ChangeEvent, FormEvent, use, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Download, FileUp, FlaskConical, GitBranch, Plus, Trash2, Upload } from "lucide-react";
 import { api } from "@/lib/api";
+import { navigateApp, runPath, workflowPath } from "@/lib/routes";
 import { workflowTemplates } from "@/lib/workflowTemplates";
 import type { ApiProvider, FileAsset, Project, ProviderTestResult, ProviderType, Workflow, WorkflowRun } from "@/types/workflow";
-
-type Props = { params: Promise<{ projectId: string }> };
 
 const providerTypes: ProviderType[] = ["mock", "openai_compatible", "deepseek", "anthropic", "custom"];
 
@@ -19,9 +19,17 @@ const providerTypeLabels: Record<ProviderType, string> = {
   custom: "自定义接口（custom）"
 };
 
-export default function ProjectPage({ params }: Props) {
-  const { projectId: projectIdParam } = use(params);
-  const projectId = Number(projectIdParam);
+export default function ProjectPage() {
+  return (
+    <Suspense fallback={<main className="p-6 text-sm text-slate-600">正在加载项目...</main>}>
+      <ProjectPageContent />
+    </Suspense>
+  );
+}
+
+function ProjectPageContent() {
+  const searchParams = useSearchParams();
+  const projectId = Number(searchParams.get("projectId") || 0);
   const [project, setProject] = useState<Project | null>(null);
   const [providers, setProviders] = useState<ApiProvider[]>([]);
   const [files, setFiles] = useState<FileAsset[]>([]);
@@ -157,7 +165,7 @@ export default function ProjectPage({ params }: Props) {
         description: template.scenario,
         workflow_json: workflowJson
       });
-      location.href = `/projects/${projectId}/workflows/${workflow.id}`;
+      navigateApp(workflowPath(projectId, workflow.id));
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : String(exc));
       setStatus("");
@@ -169,7 +177,7 @@ export default function ProjectPage({ params }: Props) {
     try {
       const run = await api.runWorkflow(id);
       setStatus(`运行完成：${run.status}`);
-      location.href = `/runs/${run.id}`;
+      navigateApp(runPath(run.id));
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : String(exc));
       setStatus("");
@@ -184,7 +192,7 @@ export default function ProjectPage({ params }: Props) {
       const text = await file.text();
       const workflowJson = JSON.parse(text);
       const imported = await api.importWorkflow(projectId, { workflow_json: workflowJson });
-      location.href = `/projects/${projectId}/workflows/${imported.id}`;
+      navigateApp(workflowPath(projectId, imported.id));
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : String(exc));
       setStatus("");
@@ -211,6 +219,10 @@ export default function ProjectPage({ params }: Props) {
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : String(exc));
     }
+  }
+
+  if (!projectId) {
+    return <main className="p-6 text-sm text-red-700">缺少 projectId 参数。</main>;
   }
 
   if (!project) {
@@ -375,7 +387,7 @@ export default function ProjectPage({ params }: Props) {
                   模板：{String(workflow.workflow_json.metadata?.template_name || "自定义")} · 节点 {workflow.workflow_json.nodes?.length || 0} / 连线 {workflow.workflow_json.edges?.length || 0}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Link className="btn btn-primary" href={`/projects/${projectId}/workflows/${workflow.id}`}>
+                  <Link className="btn btn-primary" href={workflowPath(projectId, workflow.id)}>
                     打开画布
                   </Link>
                   <button className="btn" onClick={() => runWorkflow(workflow.id)}>
@@ -398,7 +410,7 @@ export default function ProjectPage({ params }: Props) {
           <h2 className="mb-3 font-semibold">运行记录</h2>
           <div className="grid gap-2">
             {runs.map((run) => (
-              <Link key={run.id} href={`/runs/${run.id}`} className="rounded-tool border border-line p-3 text-sm hover:border-blue-300">
+              <Link key={run.id} href={runPath(run.id)} className="rounded-tool border border-line p-3 text-sm hover:border-blue-300">
                 运行 #{run.id} · 工作流 #{run.workflow_id} · <span className={run.status === "success" ? "text-emerald-700" : "text-red-600"}>{run.status}</span>
               </Link>
             ))}

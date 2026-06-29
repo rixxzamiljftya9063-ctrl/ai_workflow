@@ -5,6 +5,7 @@ backend/*.log
 backend/*.err.log
 frontend/node_modules/
 frontend/.next/
+frontend/out/
 frontend/*.log
 frontend/*.err.log
 frontend/tsconfig.tsbuildinfo
