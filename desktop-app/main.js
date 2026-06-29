@@ -8,17 +8,25 @@ const BACKEND_DIR = path.join(ROOT_DIR, "backend");
 const FRONTEND_DIR = path.join(ROOT_DIR, "frontend");
 const RUNTIME_DIR = path.join(ROOT_DIR, ".desktop-runtime");
 const LOG_DIR = path.join(RUNTIME_DIR, "logs");
-const BACKEND_PORT = Number(process.env.LINGGAILIU_BACKEND_PORT || 8000);
-const FRONTEND_PORT = Number(process.env.LINGGAILIU_FRONTEND_PORT || 3000);
+const BACKEND_PORT = Number(process.env.LINGGAILIU_BACKEND_PORT || 18000);
+const FRONTEND_PORT = Number(process.env.LINGGAILIU_FRONTEND_PORT || 13000);
 const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}`;
 const FRONTEND_URL = `http://127.0.0.1:${FRONTEND_PORT}`;
 
 let mainWindow;
 let backendProcess;
 let frontendProcess;
+let appLogStream;
 
 function ensureDirs() {
   fs.mkdirSync(LOG_DIR, { recursive: true });
+  appLogStream = fs.createWriteStream(path.join(LOG_DIR, "electron-app.log"), { flags: "a" });
+}
+
+function log(message) {
+  const line = `[${new Date().toISOString()}] ${message}\n`;
+  if (appLogStream) appLogStream.write(line);
+  console.log(message);
 }
 
 function commandExists(command) {
@@ -53,6 +61,12 @@ function spawnLogged(command, args, options, logName) {
   });
   child.stdout.pipe(logStream);
   child.stderr.pipe(logStream);
+  child.on("exit", (code, signal) => {
+    log(`${logName} process exited: code=${code} signal=${signal || ""}`);
+  });
+  child.on("error", (error) => {
+    log(`${logName} process error: ${error.message}`);
+  });
   return child;
 }
 
@@ -84,7 +98,10 @@ async function ensureFrontend() {
 }
 
 async function startBackend(pythonExe) {
-  if (await waitFor(`${BACKEND_URL}/health`, 1500)) return;
+  if (await waitFor(`${BACKEND_URL}/health`, 1500)) {
+    log(`Backend already available at ${BACKEND_URL}`);
+    return;
+  }
   backendProcess = spawnLogged(
     pythonExe,
     ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", String(BACKEND_PORT)],
@@ -106,10 +123,13 @@ async function startBackend(pythonExe) {
 }
 
 async function startFrontend() {
-  if (await waitFor(FRONTEND_URL, 1500)) return;
+  if (await waitFor(FRONTEND_URL, 1500)) {
+    log(`Frontend already available at ${FRONTEND_URL}`);
+    return;
+  }
   frontendProcess = spawnLogged(
-    "npm.cmd",
-    ["run", "dev", "--", "-H", "127.0.0.1", "-p", String(FRONTEND_PORT)],
+    process.env.ComSpec || "cmd.exe",
+    ["/d", "/s", "/c", "npm.cmd", "run", "dev", "--", "-H", "127.0.0.1", "-p", String(FRONTEND_PORT)],
     {
       cwd: FRONTEND_DIR,
       env: {
@@ -142,6 +162,15 @@ function createWindow() {
   mainWindow.setMenuBarVisibility(false);
   mainWindow.loadFile(path.join(__dirname, "splash.html"));
 
+  mainWindow.webContents.on("render-process-gone", (_, details) => {
+    log(`Renderer process gone: ${details.reason}`);
+    dialog.showErrorBox("灵改流窗口异常", `窗口进程异常退出：${details.reason}\n\n日志目录：${LOG_DIR}`);
+  });
+
+  mainWindow.webContents.on("did-fail-load", (_, code, description, url) => {
+    log(`Window failed to load ${url}: ${code} ${description}`);
+  });
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: "deny" };
@@ -150,6 +179,7 @@ function createWindow() {
 
 async function boot() {
   ensureDirs();
+  log("Booting Linggailiu desktop app");
   createWindow();
   try {
     if (!(await commandExists("python"))) throw new Error("Python was not found in PATH.");
@@ -159,14 +189,26 @@ async function boot() {
     await startBackend(pythonExe);
     await startFrontend();
     await mainWindow.loadURL(FRONTEND_URL);
+    log(`Desktop window loaded ${FRONTEND_URL}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    log(`Boot failed: ${message}`);
     dialog.showErrorBox("灵改流启动失败", `${message}\n\n日志目录：${LOG_DIR}`);
     app.quit();
   }
 }
 
-app.whenReady().then(boot);
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    if (!mainWindow) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  });
+  app.whenReady().then(boot);
+}
 
 app.on("window-all-closed", () => {
   if (frontendProcess) frontendProcess.kill();
@@ -177,4 +219,5 @@ app.on("window-all-closed", () => {
 app.on("before-quit", () => {
   if (frontendProcess) frontendProcess.kill();
   if (backendProcess) backendProcess.kill();
+  if (appLogStream) appLogStream.end();
 });
