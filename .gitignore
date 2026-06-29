@@ -9,6 +9,7 @@ frontend/out/
 frontend/*.log
 frontend/*.err.log
 frontend/tsconfig.tsbuildinfo
+.desktop-runtime/
 .env
 .env.local
 .env.*.local
