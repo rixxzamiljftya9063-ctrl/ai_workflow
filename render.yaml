@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: ai-workflow-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./storage/ai_workflow.db
+      - key: STORAGE_ROOT
+        value: ./storage
+      - key: FRONTEND_ORIGIN
+        value: https://ai-workflow-frontend.onrender.com
+      - key: DEFAULT_MOCK_PROVIDER
+        value: Mock Provider
+      - key: REQUEST_TIMEOUT_SECONDS
+        value: 180
+      - key: PROVIDER_RETRY_MAX_ATTEMPTS
+        value: 5
+      - key: PROVIDER_RETRY_BASE_DELAY_SECONDS
+        value: 1
+      - key: PROVIDER_RETRY_MAX_DELAY_SECONDS
+        value: 8
+
+  - type: web
+    name: ai-workflow-frontend
+    runtime: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start -- -H 0.0.0.0 -p $PORT
+    envVars:
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: https://ai-workflow-backend.onrender.com

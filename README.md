@@ -349,3 +349,44 @@ NEXT_PUBLIC_API_BASE_URL=https://你的后端域名
 ```
 
 注意：SQLite 需要持久磁盘；如果部署平台没有持久磁盘，重启后项目、Provider、上传文件和运行记录可能丢失。多人长期使用建议后续迁移到 PostgreSQL，并增加登录和权限系统。
+
+## Render 一键部署
+
+仓库已包含 `render.yaml`，可以用 Render Blueprint 创建两个服务：
+
+- `ai-workflow-backend`：FastAPI 后端
+- `ai-workflow-frontend`：Next.js 前端
+
+部署步骤：
+
+1. 打开 Render Blueprint 页面：
+
+```text
+https://dashboard.render.com/blueprint/new?repo=https://github.com/rixxzamiljftya9063-ctrl/ai_workflow
+```
+
+2. 登录 Render，并授权连接 GitHub。
+3. 选择本仓库，确认 Blueprint。
+4. 点击 `Apply` 开始部署。
+5. 部署完成后，打开：
+
+```text
+https://ai-workflow-frontend.onrender.com
+```
+
+后端健康检查地址：
+
+```text
+https://ai-workflow-backend.onrender.com/health
+```
+
+Render 免费实例冷启动会比较慢，首次访问可能需要等待几十秒。
+
+重要限制：
+
+- 当前 Render 配置使用 SQLite 本地文件，适合演示，不适合多人长期生产使用。
+- 免费实例重新部署或休眠恢复时，上传文件和数据库可能不稳定。
+- 正式多人使用建议迁移到 PostgreSQL，并给后端配置持久磁盘或对象存储。
+- 如果你在 Render Dashboard 修改了服务名称，需要同步修改：
+  - 后端 `FRONTEND_ORIGIN`
+  - 前端 `NEXT_PUBLIC_API_BASE_URL`
