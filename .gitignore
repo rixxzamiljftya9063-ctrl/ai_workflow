@@ -9,6 +9,8 @@ frontend/out/
 frontend/*.log
 frontend/*.err.log
 frontend/tsconfig.tsbuildinfo
+desktop-app/node_modules/
+desktop-app/dist/
 .desktop-runtime/
 .env
 .env.local
